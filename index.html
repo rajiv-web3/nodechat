@@ -1,0 +1,122 @@
+<html>
+<head>
+<style>
+#chat
+{
+height:500px;
+width:330px;
+border:solid 1px black;
+}
+#contentWrap
+{
+display:none;
+}
+#chatWrap
+{
+float:left;
+border:1px solid #000;
+}
+#users
+{
+color:Green;
+font-bold:true;
+
+}
+
+</style>
+<title>Chat Application</title>
+</head>
+<body>
+<div id="users"></div>
+<div id="nickWrap">
+<p>Enter a username :<p>
+<form id="setNick">
+<input id="nickname"></input>
+<input type="submit"></input>
+</form>
+
+</div>
+<div id="contentWrap">
+<div id="chatWrap">
+		<form id="send-message">
+			<div >
+				<div id="chat"></div>
+				 <span >Enter Message To Chat</span>  : <input id="message"></input><br>
+				<input type="submit" value="send"></input> 
+				</div>
+		</form>
+</div>
+
+  </div>
+<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+jQuery(function($){
+var socket=io.connect();
+var $messageForm=$('#send-message');
+var $nickForm=$('#setNick');
+var $nickError=$('#nickError');
+var $nickBox=$('#nickname');
+var $users=$('#users');
+var $messageBox=$('#message'); 
+var $chat=$('#chat');
+
+$nickForm.submit(function(e){
+e.preventDefault();
+socket.emit('new user',$nickBox.val(),function (data){
+if(data){
+$('#nickWrap').hide();
+$('#contentWrap').show();
+console.log('ok');
+}
+else{
+$nickError.html('Username allready exists');
+}
+});
+$nickBox.val('');
+});
+
+socket.on('usernames',function(data){
+var html='Online Users : <hr/>';
+for(var i=0;i< data.length;i++){
+html+=data[i]+ '<br/>'
+}
+$users.html(html);
+});
+
+$messageForm.submit(function(e){
+e.preventDefault();
+socket.emit('send message',$messageBox.val(),function(data){
+$chat.append('<b style="color:red;">'+ data+"<b/>");
+});
+$messageBox.val('');
+});
+//-----------------------Displaying Old Msgs------------
+socket.on('load old msgs',function(docs){
+for(var i=docs.length-1; i >=0; i--){
+displayMsg(docs[i]);
+}
+});
+//-----------------------New Messages------------------
+socket.on('new message',function(data){
+
+displayMsg(data);
+});
+//---------------------Formated Date----------------------
+
+
+//-----------------------Function To Display Msgs-------------
+
+function displayMsg(data){
+
+$chat.append('<b style="color:blue;">'+ data.nick+' :  </b>'+ data.msg+"<br/>");
+}
+socket.on('whisper',function(data){
+
+$chat.append('<b style="color:blue;">'+ data.nick+' :  </b>'+ data.msg+"<br/>");
+});
+});
+</script>
+</body>
+</html>
